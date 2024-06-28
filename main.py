@@ -10,15 +10,6 @@ client_id = secrets["client_id"]
 client_secret = secrets["client_secret"]
 
 
-class BearerAuth(requests.auth.AuthBase):
-    def __init__(self, token):
-        self.token = token
-
-    def __call__(self, r):
-        r.headers["authorization"] = "Bearer " + self.token
-        return r
-
-
 def get_access_token():
     token_url = "https://accounts.spotify.com/api/token"
     data = {
@@ -41,7 +32,7 @@ def main():
     all_episodes |= a.json()
 
     while next_url:
-        a = requests.get(next_url, auth=BearerAuth(get_access_token()))
+        a = requests.get(next_url, headers=headers)
         all_episodes["items"] += a.json()["items"]
         next_url = a.json().get("next")
 
