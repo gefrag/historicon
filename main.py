@@ -33,12 +33,13 @@ def get_access_token():
 
 def main():
     all_episodes = {}
-
     url = f"{BASE_URL}/shows/{SHOW_ID}/episodes"
+    headers = {"Authorization": f"Bearer {get_access_token()}"}
 
-    a = requests.get(url, auth=BearerAuth(get_access_token()))
+    a = requests.get(url, headers=headers)
     next_url = a.json()["next"]
     all_episodes |= a.json()
+
     while next_url:
         a = requests.get(next_url, auth=BearerAuth(get_access_token()))
         all_episodes["items"] += a.json()["items"]
