@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Historicon</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1f2933;
+        --muted: #5f6c7b;
+        --accent: #b45309;
+        --paper: #f7f2ea;
+        --panel: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        line-height: 1.6;
+        color: var(--ink);
+        background: var(--paper);
+      }
+
+      main {
+        width: min(920px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 64px 0;
+      }
+
+      .intro {
+        background: var(--panel);
+        border: 1px solid #e3d8c8;
+        border-radius: 8px;
+        padding: 40px;
+        box-shadow: 0 16px 40px rgba(31, 41, 51, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-size: clamp(2rem, 6vw, 4rem);
+        line-height: 1.05;
+      }
+
+      p {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 1.05rem;
+      }
+
+      .highlights {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 16px;
+        margin-top: 32px;
+      }
+
+      .highlight {
+        padding: 18px;
+        border-left: 4px solid var(--accent);
+        background: #fbf8f3;
+      }
+
+      .highlight strong {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--ink);
+      }
+
+      footer {
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <h1 id="page-title">Historicon</h1>
+        <p>
+          A simple starting page for exploring history, stories, and the people
+          who shaped important moments across time.
+        </p>
+        <p>
+          Use this page as a lightweight homepage, project placeholder, or base
+          for a richer historical archive.
+        </p>
+
+        <div class="highlights" aria-label="Highlights">
+          <div class="highlight">
+            <strong>Timelines</strong>
+            Browse key events in clear chronological order.
+          </div>
+          <div class="highlight">
+            <strong>Episodes</strong>
+            Collect historical stories in a format that is easy to expand.
+          </div>
+          <div class="highlight">
+            <strong>Context</strong>
+            Connect places, people, and dates into a more complete picture.
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        Built as a minimal static HTML page.
+      </footer>
+    </main>
+  </body>
+</html>
