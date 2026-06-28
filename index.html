@@ -249,6 +249,44 @@
         font-size: 1.1rem;
       }
 
+      .chart-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .chart-head h3 {
+        margin: 0;
+      }
+
+      .segmented {
+        display: inline-flex;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #f7efe4;
+      }
+
+      .segment {
+        min-height: 30px;
+        border: 0;
+        border-radius: 5px;
+        padding: 5px 9px;
+        color: var(--muted);
+        background: transparent;
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: 900;
+      }
+
+      .segment.is-active {
+        color: var(--accent-dark);
+        background: #fff;
+        box-shadow: 0 1px 4px rgba(23, 32, 38, 0.08);
+      }
+
       .bars {
         display: grid;
         gap: 12px;
@@ -268,9 +306,20 @@
         font-weight: 800;
       }
 
+      .bar-button {
+        width: 100%;
+        border: 0;
+        padding: 0;
+        color: inherit;
+        background: transparent;
+        text-align: left;
+        cursor: pointer;
+      }
+
       .bar-track {
         height: 12px;
         overflow: hidden;
+        border: 0;
         border-radius: 999px;
         background: #eee3d4;
       }
@@ -279,14 +328,34 @@
         height: 100%;
         border-radius: inherit;
         background: linear-gradient(90deg, var(--accent), var(--gold));
+        transition:
+          filter 160ms ease,
+          transform 160ms ease;
+      }
+
+      .bar-row:hover .bar-fill,
+      .bar-row:focus-within .bar-fill,
+      .bar-row.is-active .bar-fill {
+        filter: saturate(1.35);
+        transform: scaleX(1.01);
+        transform-origin: left center;
+      }
+
+      .bar-row.is-active .bar-label,
+      .bar-row.is-active .bar-value {
+        color: var(--accent-dark);
       }
 
       .timeline {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
         gap: 10px;
         align-items: end;
         min-height: 180px;
+      }
+
+      .timeline.is-all {
+        grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
       }
 
       .month {
@@ -295,12 +364,20 @@
         justify-content: end;
         min-height: 160px;
         gap: 8px;
+        border: 0;
+        padding: 0;
+        color: inherit;
+        background: transparent;
+        cursor: pointer;
       }
 
       .month-column {
         min-height: 12px;
         border-radius: 6px 6px 2px 2px;
         background: linear-gradient(180deg, var(--blue), var(--green));
+        transition:
+          filter 160ms ease,
+          transform 160ms ease;
       }
 
       .month-label {
@@ -310,6 +387,26 @@
         text-align: center;
       }
 
+      .month-count {
+        display: block;
+        margin-top: 2px;
+        color: var(--ink);
+        font-size: 0.86rem;
+        font-weight: 900;
+      }
+
+      .month:hover .month-column,
+      .month:focus-visible .month-column,
+      .month.is-active .month-column {
+        filter: saturate(1.35);
+        transform: translateY(-2px);
+      }
+
+      .month.is-active .month-label,
+      .month.is-active .month-count {
+        color: var(--accent-dark);
+      }
+
       .controls {
         display: grid;
         grid-template-columns: minmax(220px, 1fr) 170px 180px;
@@ -317,6 +414,28 @@
         padding: 14px;
         margin-bottom: 16px;
         background: var(--panel-strong);
+      }
+
+      .active-filter {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: -2px 0 16px;
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      .clear-filter {
+        min-height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 6px 10px;
+        color: var(--accent-dark);
+        background: #fff;
+        cursor: pointer;
+        font-weight: 800;
       }
 
       .field {
@@ -429,6 +548,11 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
+        .chart-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
         .controls {
           grid-template-columns: 1fr;
         }
@@ -497,7 +621,17 @@
             <div id="yearBars" class="bars"></div>
           </div>
           <div class="chart-panel">
-            <h3>Release rhythm by month</h3>
+            <div class="chart-head">
+              <h3>Release rhythm by month</h3>
+              <div class="segmented" aria-label="Month chart range">
+                <button id="recentMonths" class="segment is-active" type="button">
+                  Last 12
+                </button>
+                <button id="allMonths" class="segment" type="button">
+                  All months
+                </button>
+              </div>
+            </div>
             <div id="monthChart" class="timeline"></div>
           </div>
         </section>
@@ -527,6 +661,7 @@
               </select>
             </div>
           </div>
+          <div id="activeFilter" class="active-filter hidden"></div>
 
           <div id="episodes" class="episodes"></div>
         </section>
@@ -537,6 +672,8 @@
       const state = {
         episodes: [],
         filtered: [],
+        monthFilter: null,
+        monthRange: "recent",
       };
 
       const formatDate = new Intl.DateTimeFormat("en-GB", {
@@ -620,6 +757,39 @@
           descriptionText: cleanDescription(episode.description),
           episodeNumber: getEpisodeNumber(episode.name),
         };
+      }
+
+      function scrollToEpisodes() {
+        document.getElementById("episodes-title").scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+
+      function filterByYear(year) {
+        state.monthFilter = null;
+        document.getElementById("yearFilter").value = String(year);
+        renderYearBars(state.episodes);
+        renderMonthChart(state.episodes);
+        renderEpisodes();
+        scrollToEpisodes();
+      }
+
+      function filterByMonth(monthKey) {
+        state.monthFilter = monthKey;
+        document.getElementById("yearFilter").value = monthKey.slice(0, 4);
+        renderYearBars(state.episodes);
+        renderMonthChart(state.episodes);
+        renderEpisodes();
+        scrollToEpisodes();
+      }
+
+      function clearChartFilter() {
+        state.monthFilter = null;
+        document.getElementById("yearFilter").value = "all";
+        renderYearBars(state.episodes);
+        renderMonthChart(state.episodes);
+        renderEpisodes();
       }
 
       function renderHero(episodes) {
@@ -734,35 +904,49 @@
         document.getElementById("yearBars").innerHTML = counts
           .map(
             ([year, count]) => `
-              <div class="bar-row">
+              <button class="bar-row bar-button ${String(year) === document.getElementById("yearFilter").value && !state.monthFilter ? "is-active" : ""}" type="button" data-year="${year}" aria-label="Show ${count} episodes from ${year}">
                 <div class="bar-label">${year}</div>
                 <div class="bar-track">
                   <div class="bar-fill" style="width: ${(count / max) * 100}%"></div>
                 </div>
                 <div class="bar-value">${count}</div>
-              </div>
+              </button>
             `,
           )
           .join("");
+
+        document.querySelectorAll("#yearBars [data-year]").forEach((button) => {
+          button.addEventListener("click", () => filterByYear(button.dataset.year));
+        });
       }
 
       function renderMonthChart(episodes) {
         const counts = [...groupBy(episodes, (episode) => episode.monthKey).entries()]
           .sort((a, b) => a[0].localeCompare(b[0]));
         const max = Math.max(...counts.map(([, count]) => count));
-        const recent = counts.slice(-12);
+        const visibleMonths =
+          state.monthRange === "all" ? counts : counts.slice(-12);
+        const monthChart = document.getElementById("monthChart");
 
-        document.getElementById("monthChart").innerHTML = recent
+        monthChart.classList.toggle("is-all", state.monthRange === "all");
+        monthChart.innerHTML = visibleMonths
           .map(([monthKey, count]) => {
             const date = new Date(`${monthKey}-01T00:00:00`);
             return `
-              <div class="month" title="${count} episodes">
+              <button class="month ${state.monthFilter === monthKey ? "is-active" : ""}" type="button" data-month="${monthKey}" title="${count} episodes" aria-label="Show ${count} episodes from ${monthFormat.format(date)}">
                 <div class="month-column" style="height: ${Math.max(10, (count / max) * 142)}px"></div>
-                <div class="month-label">${monthFormat.format(date)}</div>
-              </div>
+                <div class="month-label">
+                  ${monthFormat.format(date)}
+                  <span class="month-count">${count}</span>
+                </div>
+              </button>
             `;
           })
           .join("");
+
+        document.querySelectorAll("#monthChart [data-month]").forEach((button) => {
+          button.addEventListener("click", () => filterByMonth(button.dataset.month));
+        });
       }
 
       function renderYearFilter(episodes) {
@@ -786,7 +970,9 @@
             episode.name.toLocaleLowerCase().includes(search) ||
             episode.descriptionText.toLocaleLowerCase().includes(search);
           const matchesYear = year === "all" || String(episode.year) === year;
-          return matchesSearch && matchesYear;
+          const matchesMonth =
+            !state.monthFilter || episode.monthKey === state.monthFilter;
+          return matchesSearch && matchesYear && matchesMonth;
         });
 
         episodes = [...episodes].sort((a, b) => {
@@ -799,6 +985,7 @@
         state.filtered = episodes;
         document.getElementById("episodeCount").textContent =
           `${episodes.length} shown`;
+        renderActiveFilter();
 
         document.getElementById("episodes").innerHTML = episodes
           .map((episode) => {
@@ -831,8 +1018,49 @@
 
       function bindControls() {
         document.getElementById("search").addEventListener("input", renderEpisodes);
-        document.getElementById("yearFilter").addEventListener("change", renderEpisodes);
+        document.getElementById("yearFilter").addEventListener("change", () => {
+          state.monthFilter = null;
+          renderYearBars(state.episodes);
+          renderMonthChart(state.episodes);
+          renderEpisodes();
+        });
         document.getElementById("sortOrder").addEventListener("change", renderEpisodes);
+        document.getElementById("recentMonths").addEventListener("click", () => {
+          setMonthRange("recent");
+        });
+        document.getElementById("allMonths").addEventListener("click", () => {
+          setMonthRange("all");
+        });
+      }
+
+      function setMonthRange(range) {
+        state.monthRange = range;
+        document
+          .getElementById("recentMonths")
+          .classList.toggle("is-active", range === "recent");
+        document
+          .getElementById("allMonths")
+          .classList.toggle("is-active", range === "all");
+        renderMonthChart(state.episodes);
+      }
+
+      function renderActiveFilter() {
+        const activeFilter = document.getElementById("activeFilter");
+        if (!state.monthFilter) {
+          activeFilter.classList.add("hidden");
+          activeFilter.innerHTML = "";
+          return;
+        }
+
+        const date = new Date(`${state.monthFilter}-01T00:00:00`);
+        activeFilter.classList.remove("hidden");
+        activeFilter.innerHTML = `
+          <span>Showing episodes from ${monthFormat.format(date)}</span>
+          <button class="clear-filter" type="button">Clear chart filter</button>
+        `;
+        activeFilter
+          .querySelector(".clear-filter")
+          .addEventListener("click", clearChartFilter);
       }
 
       async function loadEpisodes() {
