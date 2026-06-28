@@ -507,12 +507,43 @@
       }
 
       .description {
-        display: -webkit-box;
         margin-bottom: 12px;
+        color: var(--muted);
+      }
+
+      .description summary {
+        display: block;
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .description summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .description-preview {
+        display: -webkit-box;
         overflow: hidden;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
-        color: var(--muted);
+      }
+
+      .description-full {
+        margin-top: 10px;
+        white-space: pre-line;
+      }
+
+      .description-toggle {
+        display: inline-flex;
+        margin-top: 8px;
+        color: var(--accent-dark);
+        font-weight: 900;
+      }
+
+      .description[open] .description-preview,
+      .description[open] .show-more,
+      .description:not([open]) .show-less {
+        display: none;
       }
 
       .episode-actions {
@@ -855,6 +886,27 @@
         });
       }
 
+      function renderDescription(description) {
+        const content = description || "No description available.";
+        const preview =
+          content.length > 220 ? `${content.slice(0, 220).trim()}...` : content;
+
+        if (content.length <= 220) {
+          return `<p class="description">${escapeHtml(content)}</p>`;
+        }
+
+        return `
+          <details class="description">
+            <summary>
+              <span class="description-preview">${escapeHtml(preview)}</span>
+              <span class="description-toggle show-more">Show more</span>
+              <span class="description-toggle show-less">Show less</span>
+            </summary>
+            <div class="description-full">${escapeHtml(content)}</div>
+          </details>
+        `;
+      }
+
       function renderHero(episodes) {
         const latest = episodes[0];
         const oldest = episodes[episodes.length - 1];
@@ -1061,7 +1113,7 @@
                     <h3>${escapeHtml(episode.name)}</h3>
                     <div class="episode-date">${formatDate.format(episode.date)}</div>
                   </div>
-                  <div class="description">${escapeHtml(episode.descriptionText || "No description available.")}</div>
+                  ${renderDescription(episode.descriptionText)}
                   <div class="episode-actions">
                     <span class="pill">${formatDuration(episode.duration_ms)}</span>
                     <button class="button play-full" type="button" data-episode-id="${escapeHtml(episode.id)}">
