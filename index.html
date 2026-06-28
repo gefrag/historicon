@@ -522,9 +522,40 @@
         align-items: center;
       }
 
-      audio {
-        width: min(340px, 100%);
-        height: 38px;
+      .spotify-player {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-strong);
+        box-shadow: var(--shadow);
+      }
+
+      .player-title {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .player-title strong {
+        min-width: 0;
+      }
+
+      .spotify-player iframe {
+        width: 100%;
+        height: 152px;
+        border: 0;
+        border-radius: 8px;
+      }
+
+      .play-full {
+        border: 0;
+        cursor: pointer;
       }
 
       .loading,
@@ -662,6 +693,7 @@
             </div>
           </div>
           <div id="activeFilter" class="active-filter hidden"></div>
+          <div id="spotifyPlayer" class="spotify-player"></div>
 
           <div id="episodes" class="episodes"></div>
         </section>
@@ -674,6 +706,7 @@
         filtered: [],
         monthFilter: null,
         monthRange: "recent",
+        currentEpisode: null,
       };
 
       const formatDate = new Intl.DateTimeFormat("en-GB", {
@@ -742,6 +775,10 @@
         return episode.external_urls?.spotify || "#";
       }
 
+      function getSpotifyEmbedUrl(episode) {
+        return `https://open.spotify.com/embed/episode/${encodeURIComponent(episode.id)}?utm_source=generator`;
+      }
+
       function getEpisodeNumber(name) {
         const match = text(name).match(/^(\d+)/);
         return match ? Number(match[1]) : null;
@@ -790,6 +827,32 @@
         renderYearBars(state.episodes);
         renderMonthChart(state.episodes);
         renderEpisodes();
+      }
+
+      function renderSpotifyPlayer(episode) {
+        state.currentEpisode = episode;
+        document.getElementById("spotifyPlayer").innerHTML = `
+          <div class="player-title">
+            <strong>${escapeHtml(episode.name)}</strong>
+            <span class="pill">${formatDuration(episode.duration_ms)}</span>
+          </div>
+          <iframe
+            title="Spotify player for ${escapeHtml(episode.name)}"
+            src="${escapeHtml(getSpotifyEmbedUrl(episode))}"
+            loading="lazy"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          ></iframe>
+        `;
+      }
+
+      function playFullEpisode(episodeId) {
+        const episode = state.episodes.find((item) => item.id === episodeId);
+        if (!episode) return;
+        renderSpotifyPlayer(episode);
+        document.getElementById("spotifyPlayer").scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
       }
 
       function renderHero(episodes) {
@@ -990,9 +1053,6 @@
         document.getElementById("episodes").innerHTML = episodes
           .map((episode) => {
             const image = getImage(episode);
-            const preview = episode.audio_preview_url
-              ? `<audio controls src="${escapeHtml(episode.audio_preview_url)}"></audio>`
-              : "";
             return `
               <article class="episode-card">
                 ${image ? `<img src="${escapeHtml(image)}" alt="">` : "<div></div>"}
@@ -1004,16 +1064,24 @@
                   <div class="description">${escapeHtml(episode.descriptionText || "No description available.")}</div>
                   <div class="episode-actions">
                     <span class="pill">${formatDuration(episode.duration_ms)}</span>
+                    <button class="button play-full" type="button" data-episode-id="${escapeHtml(episode.id)}">
+                      Play full episode
+                    </button>
                     <a class="button secondary" href="${escapeHtml(getSpotifyUrl(episode))}" target="_blank" rel="noreferrer">
-                      Play episode
+                      Open Spotify
                     </a>
-                    ${preview}
                   </div>
                 </div>
               </article>
             `;
           })
           .join("");
+
+        document.querySelectorAll("[data-episode-id]").forEach((button) => {
+          button.addEventListener("click", () => {
+            playFullEpisode(button.dataset.episodeId);
+          });
+        });
       }
 
       function bindControls() {
@@ -1081,6 +1149,7 @@
           renderMonthChart(state.episodes);
           renderYearFilter(state.episodes);
           bindControls();
+          renderSpotifyPlayer(state.episodes[0]);
           renderEpisodes();
 
           document.getElementById("loading").classList.add("hidden");
