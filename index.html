@@ -738,6 +738,7 @@
         monthFilter: null,
         monthRange: "recent",
         currentEpisode: null,
+        sourceTotal: null,
       };
 
       const formatDate = new Intl.DateTimeFormat("en-GB", {
@@ -825,6 +826,23 @@
           descriptionText: cleanDescription(episode.description),
           episodeNumber: getEpisodeNumber(episode.name),
         };
+      }
+
+      function extractEpisodes(payload) {
+        if (Array.isArray(payload)) {
+          state.sourceTotal = payload.length;
+          return payload;
+        }
+
+        if (Array.isArray(payload?.items)) {
+          state.sourceTotal =
+            Number.isFinite(payload.total) && payload.total > 0
+              ? payload.total
+              : payload.items.length;
+          return payload.items;
+        }
+
+        throw new Error("all_episodes.json does not contain an episode list");
       }
 
       function scrollToEpisodes() {
@@ -917,9 +935,13 @@
 
         document.getElementById("heroMeta").innerHTML = [
           `${episodes.length} episodes`,
+          state.sourceTotal && state.sourceTotal !== episodes.length
+            ? `${state.sourceTotal} reported by Spotify`
+            : "",
           `${totalHours} listening hours`,
           `${formatDate.format(oldest.date)} - ${formatDate.format(latest.date)}`,
         ]
+          .filter(Boolean)
           .map((item) => `<span class="pill">${item}</span>`)
           .join("");
 
@@ -1185,15 +1207,20 @@
 
       async function loadEpisodes() {
         try {
-          const response = await fetch("all_episodes.json");
+          const response = await fetch("all_episodes.json", { cache: "no-store" });
           if (!response.ok) {
             throw new Error(`Could not load all_episodes.json (${response.status})`);
           }
 
           const payload = await response.json();
-          state.episodes = payload.items
+          state.episodes = extractEpisodes(payload)
+            .filter((episode) => episode?.id && episode?.name && episode?.release_date)
             .map(normalizeEpisode)
             .sort((a, b) => b.date - a.date);
+
+          if (state.episodes.length === 0) {
+            throw new Error("all_episodes.json did not include any usable episodes");
+          }
 
           renderHero(state.episodes);
           renderStats(state.episodes);
